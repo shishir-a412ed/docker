@@ -986,8 +986,11 @@ func (daemon *Daemon) createRootfs(container *Container) error {
 	if err != nil {
 		return err
 	}
-	if err := idtools.MkdirAs(container.root, 0700, rootUID, rootGID); err != nil {
-		return err
+
+	if _, err := os.Stat(container.root); os.IsNotExist(err) {
+		if err := idtools.MkdirAs(container.root, 0700, rootUID, rootGID); err != nil {
+			return err
+		}
 	}
 	initID := fmt.Sprintf("%s-init", container.ID)
 	if err := daemon.driver.Create(initID, container.ImageID); err != nil {

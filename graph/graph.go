@@ -171,6 +171,10 @@ func (graph *Graph) IsHeld(layerID string) bool {
 	return graph.retained.Exists(layerID)
 }
 
+func (graph *Graph) GetDriver() graphdriver.Driver {
+	return graph.driver
+}
+
 func (graph *Graph) restore() error {
 	dir, err := ioutil.ReadDir(graph.root)
 	if err != nil {

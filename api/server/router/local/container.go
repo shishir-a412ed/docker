@@ -143,6 +143,42 @@ func (s *router) getContainersLogs(ctx context.Context, w http.ResponseWriter, r
 	return nil
 }
 
+func (s *router) postContainersDiff(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	if vars == nil {
+		return fmt.Errorf("Missing parameter")
+	}
+
+	if err := httputils.ParseForm(r); err != nil {
+		return err
+	}
+
+	return s.daemon.ContainerDiffImport(r.Body, r.Form.Get("container"))
+}
+
+func (s *router) postContainersMetadata(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	if vars == nil {
+		return fmt.Errorf("Missing parameter")
+	}
+
+	return s.daemon.ContainerMetadataImport(r.Body)
+}
+
+func (s *router) getContainersDiff(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	if vars == nil {
+		return fmt.Errorf("Missing parameter")
+	}
+
+	return s.daemon.ContainerDiffExport(vars["name"], w)
+}
+
+func (s *router) getContainersMetadata(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	if vars == nil {
+		return fmt.Errorf("Missing parameter")
+	}
+
+	return s.daemon.ContainerMetadataExport(vars["name"], w)
+}
+
 func (s *router) getContainersExport(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	return s.daemon.ContainerExport(vars["name"], w)
 }

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -19,11 +20,15 @@ import (
 // The URL argument is the address of a tarball (.tar, .tar.gz, .tgz, .bzip, .tar.xz, .txz) file or a path to local file relative to docker client. If the URL is '-', then the tar file is read from STDIN.
 //
 // Usage: docker import [OPTIONS] file|URL|- [REPOSITORY[:TAG]]
+// Usage for diff or metadata option: docker import [OPTIONS] - [CONTAINER ID|NAME]
+
 func (cli *DockerCli) CmdImport(args ...string) error {
 	cmd := Cli.Subcmd("import", []string{"file|URL|- [REPOSITORY[:TAG]]"}, Cli.DockerCommands["import"].Description, true)
 	flChanges := opts.NewListOpts(nil)
 	cmd.Var(&flChanges, []string{"c", "-change"}, "Apply Dockerfile instruction to the created image")
 	message := cmd.String([]string{"m", "-message"}, "", "Set commit message for imported image")
+	flDiff := cmd.String([]string{"-diff"}, "", "Import the diff of a container from a tarball")
+	flMetadata := cmd.Bool([]string{"-metadata"}, false, "Import the metadata of a container from a tarball")
 	cmd.Require(flag.Min, 1)
 
 	cmd.ParseFlags(args, true)
@@ -34,9 +39,18 @@ func (cli *DockerCli) CmdImport(args ...string) error {
 		repository = cmd.Arg(1)
 	)
 
+	if *flMetadata && (*flDiff != "") {
+		return errors.New("diff and metadata are sequential import options. Use diff after container's metadata is loaded")
+	}
+
+	if *flDiff != "" {
+		v.Set("container", *flDiff)
+	}
+
 	v.Set("fromSrc", src)
 	v.Set("repo", repository)
 	v.Set("message", *message)
+
 	for _, change := range flChanges.GetAll() {
 		v.Add("changes", change)
 	}
@@ -74,6 +88,17 @@ func (cli *DockerCli) CmdImport(args ...string) error {
 		out:         cli.out,
 	}
 
-	_, err := cli.stream("POST", "/images/create?"+v.Encode(), sopts)
-	return err
+	if *flDiff != "" {
+		if _, err := cli.stream("POST", "/containers/diff?"+v.Encode(), sopts); err != nil {
+			return err
+		}
+	} else if *flMetadata {
+		if _, err := cli.stream("POST", "/containers/metadata", sopts); err != nil {
+			return err
+		}
+	} else {
+		_, err := cli.stream("POST", "/images/create?"+v.Encode(), sopts)
+		return err
+	}
+	return nil
 }
