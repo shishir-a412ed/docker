@@ -973,7 +973,8 @@ func (daemon *Daemon) Mount(container *container.Container) error {
 		}
 		layerID = img.RootFS.ChainID()
 	}
-	rwlayer, err := daemon.layerStore.Mount(container.ID, layerID, container.GetMountLabel(), daemon.setupInitLayer)
+
+	rwlayer, err := daemon.layerStore.Mount(container.ID, layerID, container.GetMountLabel(), daemon.setupInitLayer, container.HostConfig.StorageOpt)
 	if err != nil {
 		return err
 	}
