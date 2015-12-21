@@ -231,7 +231,7 @@ func (ls *layerStore) Register(ts io.Reader, parent ChainID) (Layer, error) {
 		references:     map[Layer]struct{}{},
 	}
 
-	if err = ls.driver.Create(layer.cacheID, pid, ""); err != nil {
+	if err = ls.driver.Create(layer.cacheID, pid, "", nil); err != nil {
 		return nil, err
 	}
 
@@ -415,16 +415,17 @@ func (ls *layerStore) saveMount(mount *mountedLayer) error {
 	return nil
 }
 
-func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc MountInit) (string, error) {
+func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc MountInit, storageOpt []string) (string, error) {
 	// Use "<graph-id>-init" to maintain compatibility with graph drivers
 	// which are expecting this layer with this special name. If all
 	// graph drivers can be updated to not rely on knowing about this layer
 	// then the initID should be randomly generated.
 	initID := fmt.Sprintf("%s-init", graphID)
 
-	if err := ls.driver.Create(initID, parent, mountLabel); err != nil {
+	if err := ls.driver.Create(initID, parent, mountLabel, storageOpt); err != nil {
 		return "", err
 	}
+
 	p, err := ls.driver.Get(initID, "")
 	if err != nil {
 		return "", err
@@ -442,7 +443,7 @@ func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc Mou
 	return initID, nil
 }
 
-func (ls *layerStore) Mount(name string, parent ChainID, mountLabel string, initFunc MountInit) (l RWLayer, err error) {
+func (ls *layerStore) Mount(name string, parent ChainID, mountLabel string, initFunc MountInit, storageOpt []string) (l RWLayer, err error) {
 	ls.mountL.Lock()
 	defer ls.mountL.Unlock()
 	m, ok := ls.mounts[name]
@@ -487,14 +488,14 @@ func (ls *layerStore) Mount(name string, parent ChainID, mountLabel string, init
 	}
 
 	if initFunc != nil {
-		pid, err = ls.initMount(m.mountID, pid, mountLabel, initFunc)
+		pid, err = ls.initMount(m.mountID, pid, mountLabel, initFunc, storageOpt)
 		if err != nil {
 			return nil, err
 		}
 		m.initID = pid
 	}
 
-	if err = ls.driver.Create(m.mountID, pid, ""); err != nil {
+	if err = ls.driver.Create(m.mountID, pid, "", storageOpt); err != nil {
 		return nil, err
 	}
 

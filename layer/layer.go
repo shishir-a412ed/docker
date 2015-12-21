@@ -147,7 +147,7 @@ type Store interface {
 	Get(ChainID) (Layer, error)
 	Release(Layer) ([]Metadata, error)
 
-	Mount(id string, parent ChainID, label string, init MountInit) (RWLayer, error)
+	Mount(id string, parent ChainID, label string, init MountInit, storageOpt []string) (RWLayer, error)
 	Unmount(id string) error
 	DeleteMount(id string) ([]Metadata, error)
 	Changes(id string) ([]archive.Change, error)
