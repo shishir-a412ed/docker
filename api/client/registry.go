@@ -13,10 +13,32 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/docker/docker/pkg/term"
+	"github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
 	"github.com/docker/engine-api/types"
 	registrytypes "github.com/docker/engine-api/types/registry"
 )
+
+// GetEncodedAuth TODO
+func (cli *DockerCli) GetEncodedAuth(ref reference.Named) (string, error) {
+	repoInfo, err := registry.ParseRepositoryInfo(ref)
+	if err != nil {
+		return "", err
+	}
+	auths := make(map[string]types.AuthConfig)
+	if reference.IsReferenceFullyQualified(ref) {
+		authConfig := cli.ResolveAuthConfig(context.Background(), repoInfo.Index)
+		authConfigKey := registry.GetAuthConfigKey(repoInfo.Index)
+		auths[authConfigKey] = authConfig
+	} else {
+		auths = cli.RetrieveAuthConfigs()
+	}
+	encoded, err := EncodeAuthToBase64(auths)
+	if err != nil {
+		return "", err
+	}
+	return encoded, nil
+}
 
 // ElectAuthServer returns the default registry to use (by asking the daemon)
 func (cli *DockerCli) ElectAuthServer(ctx context.Context) string {
@@ -34,8 +56,8 @@ func (cli *DockerCli) ElectAuthServer(ctx context.Context) string {
 }
 
 // EncodeAuthToBase64 serializes the auth configuration as JSON base64 payload
-func EncodeAuthToBase64(authConfig types.AuthConfig) (string, error) {
-	buf, err := json.Marshal(authConfig)
+func EncodeAuthToBase64(authConfigs map[string]types.AuthConfig) (string, error) {
+	buf, err := json.Marshal(authConfigs)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +66,7 @@ func EncodeAuthToBase64(authConfig types.AuthConfig) (string, error) {
 
 // RegistryAuthenticationPrivilegedFunc return a RequestPrivilegeFunc from the specified registry index info
 // for the given command.
-func (cli *DockerCli) RegistryAuthenticationPrivilegedFunc(index *registrytypes.IndexInfo, cmdName string) types.RequestPrivilegeFunc {
+func (cli *DockerCli) RegistryAuthenticationPrivilegedFunc(index *registrytypes.IndexInfo, cmdName string, singleAuth bool) types.RequestPrivilegeFunc {
 	return func() (string, error) {
 		fmt.Fprintf(cli.out, "\nPlease login prior to %s:\n", cmdName)
 		indexServer := registry.GetAuthConfigKey(index)
@@ -52,7 +74,13 @@ func (cli *DockerCli) RegistryAuthenticationPrivilegedFunc(index *registrytypes.
 		if err != nil {
 			return "", err
 		}
-		return EncodeAuthToBase64(authConfig)
+		auths := make(map[string]types.AuthConfig)
+		if singleAuth {
+			auths[indexServer] = authConfig
+		} else {
+			auths = cli.configFile.AuthConfigs
+		}
+		return EncodeAuthToBase64(auths)
 	}
 }
 
