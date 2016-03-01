@@ -6,12 +6,14 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"syscall"
 
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/daemon/execdriver"
 	"github.com/docker/docker/volume"
 	volumedrivers "github.com/docker/docker/volume/drivers"
 	"github.com/docker/docker/volume/local"
+	"github.com/opencontainers/runc/libcontainer/label"
 )
 
 // setupMounts iterates through each of the mount points for a container and
@@ -26,6 +28,17 @@ func (daemon *Daemon) setupMounts(container *container.Container) ([]execdriver.
 		path, err := m.Setup()
 		if err != nil {
 			return nil, err
+		}
+		if label.RelabelNeeded(m.Mode) {
+			if lb, err := label.GetFileLabel(m.Source); err == nil || err == syscall.ENOTSUP {
+				if lb != container.MountLabel {
+					if err := label.Relabel(m.Source, container.MountLabel, label.IsShared(m.Mode)); err != nil && err != syscall.ENOTSUP {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, err
+			}
 		}
 		if !container.TrySetNetworkMount(m.Destination, path) {
 			mnt := execdriver.Mount{
