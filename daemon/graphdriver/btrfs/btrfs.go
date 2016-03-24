@@ -32,6 +32,10 @@ func init() {
 // An error is returned if BTRFS is not supported.
 func Init(home string, options []string, uidMaps, gidMaps []idtools.IDMap) (graphdriver.Driver, error) {
 
+	if len(options) != 0 {
+		return nil, fmt.Errorf("--storage-opt is not supported for btrfs")
+	}
+
 	fsMagic, err := graphdriver.GetFSMagic(home)
 	if err != nil {
 		return nil, err

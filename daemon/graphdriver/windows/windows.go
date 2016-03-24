@@ -52,6 +52,11 @@ var _ graphdriver.DiffGetterDriver = &Driver{}
 
 // InitFilter returns a new Windows storage filter driver.
 func InitFilter(home string, options []string, uidMaps, gidMaps []idtools.IDMap) (graphdriver.Driver, error) {
+
+	if len(options) != 0 {
+		return nil, fmt.Errorf("--storage-opt is not supported for windows")
+	}
+
 	logrus.Debugf("WindowsGraphDriver InitFilter at %s", home)
 	d := &Driver{
 		info: hcsshim.DriverInfo{

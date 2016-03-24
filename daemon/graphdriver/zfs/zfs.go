@@ -45,6 +45,10 @@ func (*Logger) Log(cmd []string) {
 func Init(base string, opt []string, uidMaps, gidMaps []idtools.IDMap) (graphdriver.Driver, error) {
 	var err error
 
+	if len(opt) != 0 {
+		return nil, fmt.Errorf("--storage-opt is not supported for zfs")
+	}
+
 	if _, err := exec.LookPath("zfs"); err != nil {
 		logrus.Debugf("[zfs] zfs command is not available: %v", err)
 		return nil, graphdriver.ErrPrerequisites

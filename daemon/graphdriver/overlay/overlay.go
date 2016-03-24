@@ -108,6 +108,10 @@ func init() {
 // If a overlay filesystem is not supported over a existing filesystem then error graphdriver.ErrIncompatibleFS is returned.
 func Init(home string, options []string, uidMaps, gidMaps []idtools.IDMap) (graphdriver.Driver, error) {
 
+	if len(options) != 0 {
+		return nil, fmt.Errorf("--storage-opt is not supported for overlay")
+	}
+
 	if err := supportsOverlay(); err != nil {
 		return nil, graphdriver.ErrNotSupported
 	}

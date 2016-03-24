@@ -24,6 +24,11 @@ func init() {
 // Init returns a new VFS driver.
 // This sets the home directory for the driver and returns NaiveDiffDriver.
 func Init(home string, options []string, uidMaps, gidMaps []idtools.IDMap) (graphdriver.Driver, error) {
+
+	if len(options) != 0 {
+		return nil, fmt.Errorf("--storage-opt is not supported for vfs")
+	}
+
 	d := &Driver{
 		home:    home,
 		uidMaps: uidMaps,

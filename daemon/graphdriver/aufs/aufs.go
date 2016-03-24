@@ -78,6 +78,10 @@ type Driver struct {
 // An error is returned if AUFS is not supported.
 func Init(root string, options []string, uidMaps, gidMaps []idtools.IDMap) (graphdriver.Driver, error) {
 
+	if len(options) != 0 {
+		return nil, fmt.Errorf("--storage-opt is not supported for aufs")
+	}
+
 	// Try to load the aufs kernel module
 	if err := supportsAufs(); err != nil {
 		return nil, graphdriver.ErrNotSupported
