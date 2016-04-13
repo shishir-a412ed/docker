@@ -62,6 +62,7 @@ docker-create - Create a new container
 [**--read-only**]
 [**--restart**[=*RESTART*]]
 [**--security-opt**[=*[]*]]
+[**--storage-opt**[=*[]*]]
 [**--stop-signal**[=*SIGNAL*]]
 [**--shm-size**[=*[]*]]
 [**-t**|**--tty**]
@@ -307,6 +308,13 @@ unit, `b` is used. Set LIMIT to `-1` to enable unlimited swap.
 **--security-opt**=[]
    Security Options
 
+**--storage-opt**=[]
+   Storage driver options per container
+
+   $ docker create -it --storage-opt size=120G fedora /bin/bash
+
+   This (size) will allow to set the container rootfs size to 120G at creation time. User cannot pass a size less than the Default BaseFS Size.
+  
 **--stop-signal**=*SIGTERM*
   Signal to stop a container. Default is SIGTERM.
 
