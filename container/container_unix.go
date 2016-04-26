@@ -186,6 +186,7 @@ func (container *Container) CopyImagePathContent(v volume.Volume, destination st
 		return err
 	}
 	defer v.Unmount()
+	label.Relabel(path, container.MountLabel, true)
 	return copyExistingContents(rootfs, path)
 }
 
