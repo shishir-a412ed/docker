@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
@@ -194,6 +196,7 @@ func (ls *layerStore) loadMount(mount string) error {
 }
 
 func (ls *layerStore) applyTar(tx MetadataTransaction, ts io.Reader, parent string, layer *roLayer) error {
+
 	digester := digest.Canonical.New()
 	tr := io.TeeReader(ts, digester.Hash())
 
@@ -211,13 +214,49 @@ func (ls *layerStore) applyTar(tx MetadataTransaction, ts io.Reader, parent stri
 		return err
 	}
 
-	applySize, err := ls.driver.ApplyDiff(layer.cacheID, parent, archive.Reader(rdr))
+	//  CODE STARTS HERE.
+
+	tmpDir, err := ioutil.TempDir("", "docker-layer-size-")
+	defer os.RemoveAll(tmpDir)
+
+	tmpFile := filepath.Join(tmpDir, "layer.tar")
+
+	fh, err := os.Create(tmpFile)
+	if err != nil {
+		return err
+	}
+
+	defer fh.Close()
+	if _, err = io.Copy(fh, rdr); err != nil {
+		return err
+	}
+
+	fileInfo, err := os.Stat(tmpFile)
+	if err != nil {
+		return err
+	}
+
+	newrdr, err := os.Open(tmpFile)
+	if err != nil {
+		return err
+	}
+
+	defer newrdr.Close()
+	// CODE ENDS HERE
+
+	fmt.Printf("HELLO SIZE FROM FILEINFO BEFORE APPLYDIFF IS %d\n", fileInfo.Size())
+
+	if err := ls.driver.Resize(layer.cacheID, parent, fileInfo.Size()); err != nil {
+		return err
+	}
+
+	applySize, err := ls.driver.ApplyDiff(layer.cacheID, parent, archive.Reader(newrdr))
 	if err != nil {
 		return err
 	}
 
 	// Discard trailing data but ensure metadata is picked up to reconstruct stream
-	io.Copy(ioutil.Discard, rdr) // ignore error as reader may be closed
+	io.Copy(ioutil.Discard, newrdr) // ignore error as reader may be closed
 
 	layer.size = applySize
 	layer.diffID = DiffID(digester.Digest())
@@ -227,10 +266,42 @@ func (ls *layerStore) applyTar(tx MetadataTransaction, ts io.Reader, parent stri
 	return nil
 }
 
+func computeLayerSize(rdr io.Reader) (int64, io.Reader, error) {
+	tmpDir, err := ioutil.TempDir("", "docker-layer-size")
+	defer os.RemoveAll(tmpDir)
+
+	tmpFile := filepath.Join(tmpDir, "layer.tar")
+
+	fh, err := os.Create(tmpFile)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	defer fh.Close()
+	if _, err = io.Copy(fh, rdr); err != nil {
+		return 0, nil, err
+	}
+
+	fileInfo, err := os.Stat(tmpFile)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	newrdr, err := os.Open(tmpFile)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	defer newrdr.Close()
+
+	return fileInfo.Size(), newrdr, nil
+}
+
 func (ls *layerStore) Register(ts io.Reader, parent ChainID) (Layer, error) {
 	// err is used to hold the error which will always trigger
 	// cleanup of creates sources but may not be an error returned
 	// to the caller (already exists).
+
 	var err error
 	var pid string
 	var p *roLayer
@@ -418,6 +489,7 @@ func (ls *layerStore) Release(l Layer) ([]Metadata, error) {
 }
 
 func (ls *layerStore) CreateRWLayer(name string, parent ChainID, mountLabel string, initFunc MountInit, storageOpt map[string]string) (RWLayer, error) {
+
 	ls.mountL.Lock()
 	defer ls.mountL.Unlock()
 	m, ok := ls.mounts[name]

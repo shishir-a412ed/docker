@@ -380,6 +380,12 @@ func (d *Driver) CreateReadWrite(id, parent, mountLabel string, storageOpt map[s
 	return d.Create(id, parent, mountLabel, storageOpt)
 }
 
+// Resize will resize the snapshot device and it's associated filesystem.
+// Currently this is only supported for Devicemapper.
+func (d *Driver) Resize(id, parent string, size int64) error {
+	return nil
+}
+
 // Create the filesystem with given id.
 func (d *Driver) Create(id, parent, mountLabel string, storageOpt map[string]string) error {
 	subvolumes := path.Join(d.home, "subvolumes")

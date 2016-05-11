@@ -237,6 +237,12 @@ func (d *Driver) CreateReadWrite(id, parent, mountLabel string, storageOpt map[s
 	return d.Create(id, parent, mountLabel, storageOpt)
 }
 
+// Resize will resize the snapshot device and it's associated filesystem.
+// Currently this is only supported for Devicemapper.
+func (d *Driver) Resize(id, parent string, size int64) error {
+	return nil
+}
+
 // Create is used to create the upper, lower, and merge directories required for overlay fs for a given id.
 // The parent filesystem is used to configure these directories for the overlay.
 func (d *Driver) Create(id, parent, mountLabel string, storageOpt map[string]string) (retErr error) {

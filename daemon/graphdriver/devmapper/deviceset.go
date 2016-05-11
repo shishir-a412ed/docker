@@ -1895,6 +1895,47 @@ func (devices *DeviceSet) AddDevice(hash, baseHash string, storageOpt map[string
 	return nil
 }
 
+func (devices *DeviceSet) GrowDevice(hash, baseHash string, size int64) error {
+	logrus.Debugf("devmapper: GrowDevice(hash=%s basehash=%s)", hash, baseHash)
+	defer logrus.Debugf("devmapper: GrowDevice(hash=%s basehash=%s) END", hash, baseHash)
+
+	// If a deleted device exists, return error.
+	baseInfo, err := devices.lookupDeviceWithLock(baseHash)
+	if err != nil {
+		return err
+	}
+
+	baseInfo.lock.Lock()
+	defer baseInfo.lock.Unlock()
+
+	devices.Lock()
+	defer devices.Unlock()
+
+	info, err := devices.lookupDevice(hash)
+	if err != nil {
+		return err
+	}
+
+	size = size * 2
+
+	// Grow the image snapshot device.
+	if uint64(size) > baseInfo.Size {
+		info.Size = uint64(size)
+		if err := devices.saveMetadata(info); err != nil {
+			// Try to remove unused device
+			delete(devices.Devices, hash)
+			return err
+		}
+
+		if err := devices.growFS(info); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
 func (devices *DeviceSet) parseStorageOpt(storageOpt map[string]string) (uint64, error) {
 
 	// Read size to change the block device size per container.
@@ -2247,6 +2288,8 @@ func (devices *DeviceSet) MountDevice(hash, path, mountLabel string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("HELLO: deviceset.go: MountDevice: %d\n", info.Size)
 
 	if info.Deleted {
 		return fmt.Errorf("devmapper: Can't mount device %v as it has been marked for deferred deletion", info.Hash)

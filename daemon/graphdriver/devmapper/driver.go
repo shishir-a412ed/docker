@@ -126,8 +126,19 @@ func (d *Driver) CreateReadWrite(id, parent, mountLabel string, storageOpt map[s
 	return d.Create(id, parent, mountLabel, storageOpt)
 }
 
+//Resize will resize the snapshot device and it's associated filesystem.
+func (d *Driver) Resize(id, parent string, size int64) error {
+	fmt.Println("HELLO RESIZE: CALLING GROWDEVICE")
+	if err := d.DeviceSet.GrowDevice(id, parent, size); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Create adds a device with a given id and the parent.
 func (d *Driver) Create(id, parent, mountLabel string, storageOpt map[string]string) error {
+	fmt.Println("HELLO DEVMAPPER: CALLING ADDDEVICE")
 	if err := d.DeviceSet.AddDevice(id, parent, storageOpt); err != nil {
 		return err
 	}

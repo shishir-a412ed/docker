@@ -74,6 +74,12 @@ func (d *Driver) CreateReadWrite(id, parent, mountLabel string, storageOpt map[s
 	return d.Create(id, parent, mountLabel, storageOpt)
 }
 
+// Resize will resize the snapshot device and it's associated filesystem.
+// Currently this is only supported for Devicemapper.
+func (d *Driver) Resize(id, parent string, size int64) error {
+	return nil
+}
+
 // Create prepares the filesystem for the VFS driver and copies the directory for the given id under the parent.
 func (d *Driver) Create(id, parent, mountLabel string, storageOpt map[string]string) error {
 	if len(storageOpt) != 0 {

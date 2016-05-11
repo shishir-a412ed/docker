@@ -74,6 +74,9 @@ type ProtoDriver interface {
 	// held by the driver, e.g., unmounting all layered filesystems
 	// known to this driver.
 	Cleanup() error
+	// Resize will resize (grow is supported, shrinking is not allowed)
+	// the snapshot device and grow the filesystem.
+	Resize(id, parent string, size int64) error
 }
 
 // Driver is the interface for layered/snapshot file system drivers.
