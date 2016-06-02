@@ -419,7 +419,7 @@ func (p *v1Pusher) pushImage(ctx context.Context, v1Image v1Image, ep string) (c
 		return "", err
 	}
 
-	arch, err := l.TarStream()
+	arch, _, err := l.TarStream()
 	if err != nil {
 		return "", err
 	}

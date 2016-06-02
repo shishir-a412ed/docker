@@ -174,9 +174,9 @@ func (l *tarexporter) loadLayer(filename string, rootFS image.RootFS, id string,
 
 		progressReader := progress.NewProgressReader(inflatedLayerData, progressOutput, fileInfo.Size(), stringid.TruncateID(id), "Loading layer")
 
-		return l.ls.Register(progressReader, rootFS.ChainID())
+		return l.ls.Register(progressReader, 0, rootFS.ChainID())
 	}
-	return l.ls.Register(inflatedLayerData, rootFS.ChainID())
+	return l.ls.Register(inflatedLayerData, 0, rootFS.ChainID())
 }
 
 func (l *tarexporter) setLoadedTag(ref reference.NamedTagged, imgID image.ID, outStream io.Writer) error {

@@ -27,12 +27,12 @@ func (ml *mountedLayer) cacheParent() string {
 	return ""
 }
 
-func (ml *mountedLayer) TarStream() (io.ReadCloser, error) {
-	archiver, err := ml.layerStore.driver.Diff(ml.mountID, ml.cacheParent())
+func (ml *mountedLayer) TarStream() (io.ReadCloser, int64, error) {
+	archiver, diffSize, err := ml.layerStore.driver.Diff(ml.mountID, ml.cacheParent())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return archiver, nil
+	return archiver, diffSize, nil
 }
 
 func (ml *mountedLayer) Name() string {

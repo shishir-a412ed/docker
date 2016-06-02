@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strconv"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
@@ -227,7 +228,7 @@ func (ls *layerStore) applyTar(tx MetadataTransaction, ts io.Reader, parent stri
 	return nil
 }
 
-func (ls *layerStore) Register(ts io.Reader, parent ChainID) (Layer, error) {
+func (ls *layerStore) Register(ts io.Reader, diffSize int64, parent ChainID) (Layer, error) {
 	// err is used to hold the error which will always trigger
 	// cleanup of creates sources but may not be an error returned
 	// to the caller (already exists).
@@ -263,7 +264,11 @@ func (ls *layerStore) Register(ts io.Reader, parent ChainID) (Layer, error) {
 		references:     map[Layer]struct{}{},
 	}
 
-	if err = ls.driver.Create(layer.cacheID, pid, "", nil); err != nil {
+	if diffSize < 0 {
+		diffSize = 0
+	}
+
+	if err = ls.driver.Create(layer.cacheID, pid, "", map[string]string{"growSize": strconv.FormatInt(diffSize, 10)}); err != nil {
 		return nil, err
 	}
 

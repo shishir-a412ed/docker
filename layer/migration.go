@@ -115,7 +115,7 @@ func (ls *layerStore) ChecksumForGraphID(id, parent, oldTarDataPath, newTarDataP
 }
 
 func (ls *layerStore) checksumForGraphIDNoTarsplit(id, parent, newTarDataPath string) (diffID DiffID, size int64, err error) {
-	rawarchive, err := ls.driver.Diff(id, parent)
+	rawarchive, _, err := ls.driver.Diff(id, parent)
 	if err != nil {
 		return
 	}

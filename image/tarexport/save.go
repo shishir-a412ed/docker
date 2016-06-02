@@ -298,7 +298,7 @@ func (s *saveSession) saveLayer(id layer.ChainID, legacyImg image.V1Image, creat
 	}
 	defer layer.ReleaseAndLog(s.ls, l)
 
-	arch, err := l.TarStream()
+	arch, _, err := l.TarStream()
 	if err != nil {
 		return err
 	}

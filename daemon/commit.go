@@ -145,10 +145,11 @@ func (daemon *Daemon) Commit(name string, c *backend.ContainerCommitConfig) (str
 		}
 	}
 
-	rwTar, err := daemon.exportContainerRw(container)
+	rwTar, diffSize, err := daemon.exportContainerRw(container)
 	if err != nil {
 		return "", err
 	}
+
 	defer func() {
 		if rwTar != nil {
 			rwTar.Close()
@@ -171,7 +172,7 @@ func (daemon *Daemon) Commit(name string, c *backend.ContainerCommitConfig) (str
 		osFeatures = img.OSFeatures
 	}
 
-	l, err := daemon.layerStore.Register(rwTar, rootFS.ChainID())
+	l, err := daemon.layerStore.Register(rwTar, diffSize, rootFS.ChainID())
 	if err != nil {
 		return "", err
 	}
@@ -246,19 +247,20 @@ func (daemon *Daemon) Commit(name string, c *backend.ContainerCommitConfig) (str
 	return id.String(), nil
 }
 
-func (daemon *Daemon) exportContainerRw(container *container.Container) (archive.Archive, error) {
+func (daemon *Daemon) exportContainerRw(container *container.Container) (archive.Archive, int64, error) {
 	if err := daemon.Mount(container); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	archive, err := container.RWLayer.TarStream()
+	archive, diffSize, err := container.RWLayer.TarStream()
 	if err != nil {
 		daemon.Unmount(container) // logging is already handled in the `Unmount` function
-		return nil, err
+		return nil, 0, err
 	}
+
 	return ioutils.NewReadCloserWrapper(archive, func() error {
 			archive.Close()
 			return container.RWLayer.Unmount()
 		}),
-		nil
+		diffSize, nil
 }

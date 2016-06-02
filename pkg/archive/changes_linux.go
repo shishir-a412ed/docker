@@ -27,13 +27,19 @@ type walker struct {
 	root2 *FileInfo
 }
 
+// diffSize computes the sum(size) of all the files in the container rootfs
+// and return that to daemon layer. daemon would then resize the snapshot device
+// if need be, based on this diffSize.
+var diffSize int64
+
 // collectFileInfoForChanges returns a complete representation of the trees
 // rooted at dir1 and dir2, with one important exception: any subtree or
 // leaf where the inode and device numbers are an exact match between dir1
 // and dir2 will be pruned from the results. This method is *only* to be used
 // to generating a list of changes between the two directories, as it does not
 // reflect the full contents.
-func collectFileInfoForChanges(dir1, dir2 string) (*FileInfo, *FileInfo, error) {
+func collectFileInfoForChanges(dir1, dir2 string) (*FileInfo, *FileInfo, int64, error) {
+	diffSize = 0
 	w := &walker{
 		dir1:  dir1,
 		dir2:  dir2,
@@ -43,18 +49,23 @@ func collectFileInfoForChanges(dir1, dir2 string) (*FileInfo, *FileInfo, error) 
 
 	i1, err := os.Lstat(w.dir1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 	i2, err := os.Lstat(w.dir2)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
+
+	fmt.Printf("LayerFS is %s\n", w.dir2)
+	fmt.Printf("BaseFS is %s\n", w.dir1)
 
 	if err := w.walk("/", i1, i2); err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
-	return w.root1, w.root2, nil
+	fmt.Println("HELLO : pkg/archive/changes_linux.go: diffSize is %d\n", diffSize)
+
+	return w.root1, w.root2, diffSize, nil
 }
 
 // Given a FileInfo, its path info, and a reference to the root of the tree
@@ -173,15 +184,23 @@ func (w *walker) walk(path string, i1, i2 os.FileInfo) (err error) {
 		ix2++
 	}
 
+	var cInfo1Size, cInfo2Size int64
+
 	// For each of the names present in either or both of the directories being
 	// iterated, stat the name under each root, and recurse the pair of them:
 	for _, name := range names {
 		fname := filepath.Join(path, name)
 		var cInfo1, cInfo2 os.FileInfo
+		cInfo1Size = 0
+		cInfo2Size = 0
 		if is1Dir {
 			cInfo1, err = os.Lstat(filepath.Join(w.dir1, fname)) // lstat(2): fs access
 			if err != nil && !os.IsNotExist(err) {
 				return err
+			}
+			// cInfo1 exists.
+			if err == nil {
+				cInfo1Size = cInfo1.Size()
 			}
 		}
 		if is2Dir {
@@ -189,7 +208,14 @@ func (w *walker) walk(path string, i1, i2 os.FileInfo) (err error) {
 			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
+			// cInfo2 exists.
+			if err == nil {
+				cInfo2Size = cInfo2.Size()
+			}
 		}
+
+		diffSize = diffSize + (cInfo2Size - cInfo1Size)
+
 		if err = w.walk(fname, cInfo1, cInfo2); err != nil {
 			return err
 		}

@@ -76,7 +76,7 @@ func (diffID DiffID) String() string {
 type TarStreamer interface {
 	// TarStream returns a tar archive stream
 	// for the contents of a layer.
-	TarStream() (io.ReadCloser, error)
+	TarStream() (io.ReadCloser, int64, error)
 }
 
 // Layer represents a read-only layer
@@ -167,7 +167,7 @@ type MountInit func(root string) error
 // Store represents a backend for managing both
 // read-only and read-write layers.
 type Store interface {
-	Register(io.Reader, ChainID) (Layer, error)
+	Register(io.Reader, int64, ChainID) (Layer, error)
 	Get(ChainID) (Layer, error)
 	Release(Layer) ([]Metadata, error)
 

@@ -351,7 +351,7 @@ func (pd *v2PushDescriptor) Upload(ctx context.Context, progressOutput progress.
 	}
 	defer layerUpload.Close()
 
-	arch, err := pd.layer.TarStream()
+	arch, _, err := pd.layer.TarStream()
 	if err != nil {
 		return distribution.Descriptor{}, xfer.DoNotRetry{Err: err}
 	}
