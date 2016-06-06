@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/docker/docker/runconfig"
+	runconfigopts "github.com/docker/docker/runconfig/opts"
 	volumestore "github.com/docker/docker/volume/store"
 	"github.com/docker/engine-api/types"
 	containertypes "github.com/docker/engine-api/types/container"
@@ -20,7 +21,7 @@ import (
 )
 
 // ContainerCreate creates a container.
-func (daemon *Daemon) ContainerCreate(params types.ContainerCreateConfig) (types.ContainerCreateResponse, error) {
+func (daemon *Daemon) ContainerCreate(params types.ContainerCreateConfig, storageOpt []string) (types.ContainerCreateResponse, error) {
 	if params.Config == nil {
 		return types.ContainerCreateResponse{}, fmt.Errorf("Config cannot be empty in order to create a container")
 	}
@@ -43,7 +44,7 @@ func (daemon *Daemon) ContainerCreate(params types.ContainerCreateConfig) (types
 		return types.ContainerCreateResponse{Warnings: warnings}, err
 	}
 
-	container, err := daemon.create(params)
+	container, err := daemon.create(params, storageOpt)
 	if err != nil {
 		return types.ContainerCreateResponse{Warnings: warnings}, daemon.imageNotExistToErrcode(err)
 	}
@@ -52,7 +53,7 @@ func (daemon *Daemon) ContainerCreate(params types.ContainerCreateConfig) (types
 }
 
 // Create creates a new container from the given configuration with a given name.
-func (daemon *Daemon) create(params types.ContainerCreateConfig) (retC *container.Container, retErr error) {
+func (daemon *Daemon) create(params types.ContainerCreateConfig, storageOpt []string) (retC *container.Container, retErr error) {
 	var (
 		container *container.Container
 		img       *image.Image
@@ -91,7 +92,15 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig) (retC *containe
 		return nil, err
 	}
 
-	container.HostConfig.StorageOpt = params.HostConfig.StorageOpt
+	if storageOpt != nil {
+		storageOpts, err := runconfigopts.ParseStorageOpts(storageOpt)
+		if err != nil {
+			return nil, err
+		}
+		container.HostConfig.StorageOpt = storageOpts
+	} else {
+		container.HostConfig.StorageOpt = params.HostConfig.StorageOpt
+	}
 
 	// Set RWLayer for container after mount labels have been set
 	if err := daemon.setRWLayer(container); err != nil {

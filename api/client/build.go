@@ -62,6 +62,9 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 	cmd.Var(&flBuildArg, []string{"-build-arg"}, "Set build-time variables")
 	isolation := cmd.String([]string{"-isolation"}, "", "Container isolation technology")
 
+	flStorageOpt := opts.NewListOpts(nil)
+	cmd.Var(&flStorageOpt, []string{"-storage-opt"}, "Set storage driver options per container")
+
 	flLabels := opts.NewListOpts(nil)
 	cmd.Var(&flLabels, []string{"-label"}, "Set metadata for an image")
 
@@ -235,6 +238,7 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		BuildArgs:      runconfigopts.ConvertKVStringsToMap(flBuildArg.GetAll()),
 		AuthConfigs:    cli.retrieveAuthConfigs(),
 		Labels:         runconfigopts.ConvertKVStringsToMap(flLabels.GetAll()),
+		StorageOpt:     flStorageOpt.GetAll(),
 	}
 
 	response, err := cli.client.ImageBuild(ctx, body, options)

@@ -435,7 +435,7 @@ func Parse(flags *pflag.FlagSet, copts *ContainerOptions) (*container.Config, *c
 		return nil, nil, nil, err
 	}
 
-	storageOpts, err := parseStorageOpts(copts.flStorageOpt.GetAll())
+	storageOpts, err := ParseStorageOpts(copts.flStorageOpt.GetAll())
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -675,7 +675,7 @@ func parseSecurityOpts(securityOpts []string) ([]string, error) {
 }
 
 // parses storage options per container into a map
-func parseStorageOpts(storageOpts []string) (map[string]string, error) {
+func ParseStorageOpts(storageOpts []string) (map[string]string, error) {
 	m := make(map[string]string)
 	for _, option := range storageOpts {
 		if strings.Contains(option, "=") {

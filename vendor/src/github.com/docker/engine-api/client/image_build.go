@@ -51,6 +51,11 @@ func imageBuildOptionsToQuery(options types.ImageBuildOptions) (url.Values, erro
 	query := url.Values{
 		"t": options.Tags,
 	}
+
+	for _, option := range options.StorageOpt {
+		query.Set("storageOpt", option)
+	}
+
 	if options.SuppressOutput {
 		query.Set("q", "1")
 	}
