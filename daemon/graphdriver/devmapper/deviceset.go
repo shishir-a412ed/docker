@@ -1919,7 +1919,7 @@ func (devices *DeviceSet) AddDevice(hash, baseHash string, storageOpt map[string
 		return fmt.Errorf("devmapper: device %s already exists. Deleted=%v", hash, info.Deleted)
 	}
 
-	size, err := devices.parseStorageOpt(storageOpt)
+	size, err := devices.parseStorageOpt(storageOpt, baseInfo.Size)
 	if err != nil {
 		return err
 	}
@@ -1951,7 +1951,7 @@ func (devices *DeviceSet) AddDevice(hash, baseHash string, storageOpt map[string
 	return nil
 }
 
-func (devices *DeviceSet) parseStorageOpt(storageOpt map[string]string) (uint64, error) {
+func (devices *DeviceSet) parseStorageOpt(storageOpt map[string]string, infoSize uint64) (uint64, error) {
 
 	// Read size to change the block device size per container.
 	for key, val := range storageOpt {
@@ -1963,6 +1963,12 @@ func (devices *DeviceSet) parseStorageOpt(storageOpt map[string]string) (uint64,
 				return 0, err
 			}
 			return uint64(size), nil
+		case "growsize":
+			size, err := units.RAMInBytes(val)
+			if err != nil {
+				return 0, err
+			}
+			return infoSize + uint64(size), nil
 		default:
 			return 0, fmt.Errorf("Unknown option %s", key)
 		}

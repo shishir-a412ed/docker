@@ -425,7 +425,7 @@ func (pd *v2PushDescriptor) uploadUsingSession(
 	diffID layer.DiffID,
 	layerUpload distribution.BlobWriter,
 ) (distribution.Descriptor, error) {
-	arch, err := pd.layer.TarStream()
+	arch, _, err := pd.layer.TarStream()
 	if err != nil {
 		return distribution.Descriptor{}, xfer.DoNotRetry{Err: err}
 	}

@@ -326,7 +326,7 @@ func (ldm *LayerDownloadManager) makeDownloadFunc(descriptor DownloadDescriptor,
 			if ds, ok := d.layerStore.(layer.DescribableStore); ok {
 				d.layer, err = ds.RegisterWithDescriptor(inflatedLayerData, parentLayer, src)
 			} else {
-				d.layer, err = d.layerStore.Register(inflatedLayerData, parentLayer)
+				d.layer, err = d.layerStore.Register(inflatedLayerData, 0, parentLayer)
 			}
 			if err != nil {
 				select {
@@ -411,7 +411,7 @@ func (ldm *LayerDownloadManager) makeDownloadFuncFromDownload(descriptor Downloa
 				return
 			}
 
-			layerReader, err := l.TarStream()
+			layerReader, _, err := l.TarStream()
 			if err != nil {
 				d.err = err
 				return
@@ -425,7 +425,7 @@ func (ldm *LayerDownloadManager) makeDownloadFuncFromDownload(descriptor Downloa
 			if ds, ok := d.layerStore.(layer.DescribableStore); ok {
 				d.layer, err = ds.RegisterWithDescriptor(layerReader, parentLayer, src)
 			} else {
-				d.layer, err = d.layerStore.Register(layerReader, parentLayer)
+				d.layer, err = d.layerStore.Register(layerReader, 0, parentLayer)
 			}
 			if err != nil {
 				d.err = fmt.Errorf("failed to register layer: %v", err)

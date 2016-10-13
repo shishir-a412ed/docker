@@ -16,11 +16,11 @@ type emptyLayer struct{}
 // EmptyLayer is a layer that corresponds to empty tar.
 var EmptyLayer = &emptyLayer{}
 
-func (el *emptyLayer) TarStream() (io.ReadCloser, error) {
+func (el *emptyLayer) TarStream() (io.ReadCloser, int64, error) {
 	buf := new(bytes.Buffer)
 	tarWriter := tar.NewWriter(buf)
 	tarWriter.Close()
-	return ioutil.NopCloser(buf), nil
+	return ioutil.NopCloser(buf), 0, nil
 }
 
 func (el *emptyLayer) ChainID() ChainID {

@@ -506,15 +506,17 @@ func (d *Driver) DiffSize(id, parent string) (size int64, err error) {
 
 // Diff produces an archive of the changes between the specified
 // layer and its parent layer which may be "".
-func (d *Driver) Diff(id, parent string) (archive.Archive, error) {
+func (d *Driver) Diff(id, parent string) (archive.Archive, int64, error) {
 	diffPath := d.getDiffPath(id)
 	logrus.Debugf("Tar with options on %s", diffPath)
-	return archive.TarWithOptions(diffPath, &archive.TarOptions{
+	archive, err := archive.TarWithOptions(diffPath, &archive.TarOptions{
 		Compression:    archive.Uncompressed,
 		UIDMaps:        d.uidMaps,
 		GIDMaps:        d.gidMaps,
 		WhiteoutFormat: archive.OverlayWhiteoutFormat,
 	})
+
+	return archive, 0, err
 }
 
 // Changes produces a list of changes between the specified layer

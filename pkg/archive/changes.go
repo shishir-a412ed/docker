@@ -339,24 +339,24 @@ func newRootFileInfo() *FileInfo {
 
 // ChangesDirs compares two directories and generates an array of Change objects describing the changes.
 // If oldDir is "", then all files in newDir will be Add-Changes.
-func ChangesDirs(newDir, oldDir string) ([]Change, error) {
+func ChangesDirs(newDir, oldDir string) ([]Change, int64, error) {
 	var (
 		oldRoot, newRoot *FileInfo
 	)
 	if oldDir == "" {
 		emptyDir, err := ioutil.TempDir("", "empty")
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		defer os.Remove(emptyDir)
 		oldDir = emptyDir
 	}
-	oldRoot, newRoot, err := collectFileInfoForChanges(oldDir, newDir)
+	oldRoot, newRoot, diffSize, err := collectFileInfoForChanges(oldDir, newDir)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return newRoot.Changes(oldRoot), nil
+	return newRoot.Changes(oldRoot), diffSize, nil
 }
 
 // ChangesSize calculates the size in bytes of the provided changes, based on newDir.

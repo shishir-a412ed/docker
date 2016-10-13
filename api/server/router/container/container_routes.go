@@ -364,7 +364,7 @@ func (s *containerRouter) postContainersCreate(ctx context.Context, w http.Respo
 		HostConfig:       hostConfig,
 		NetworkingConfig: networkingConfig,
 		AdjustCPUShares:  adjustCPUShares,
-	}, validateHostname)
+	}, nil, validateHostname)
 	if err != nil {
 		return err
 	}

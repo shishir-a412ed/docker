@@ -21,10 +21,10 @@ type roLayer struct {
 	references     map[Layer]struct{}
 }
 
-func (rl *roLayer) TarStream() (io.ReadCloser, error) {
+func (rl *roLayer) TarStream() (io.ReadCloser, int64, error) {
 	r, err := rl.layerStore.store.TarSplitReader(rl.chainID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	pr, pw := io.Pipe()
@@ -38,9 +38,9 @@ func (rl *roLayer) TarStream() (io.ReadCloser, error) {
 	}()
 	rc, err := newVerifiedReadCloser(pr, digest.Digest(rl.diffID))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return rc, nil
+	return rc, 0, nil
 }
 
 func (rl *roLayer) ChainID() ChainID {

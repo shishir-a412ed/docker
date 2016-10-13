@@ -43,13 +43,13 @@ func NewNaiveDiffDriver(driver ProtoDriver, uidMaps, gidMaps []idtools.IDMap) Dr
 
 // Diff produces an archive of the changes between the specified
 // layer and its parent layer which may be "".
-func (gdw *NaiveDiffDriver) Diff(id, parent string) (arch archive.Archive, err error) {
+func (gdw *NaiveDiffDriver) Diff(id, parent string) (arch archive.Archive, diffSize int64, err error) {
 	startTime := time.Now()
 	driver := gdw.ProtoDriver
 
 	layerFs, err := driver.Get(id, "")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	defer func() {
@@ -61,29 +61,29 @@ func (gdw *NaiveDiffDriver) Diff(id, parent string) (arch archive.Archive, err e
 	if parent == "" {
 		archive, err := archive.Tar(layerFs, archive.Uncompressed)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		return ioutils.NewReadCloserWrapper(archive, func() error {
 			err := archive.Close()
 			driver.Put(id)
 			return err
-		}), nil
+		}), 0, nil
 	}
 
 	parentFs, err := driver.Get(parent, "")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer driver.Put(parent)
 
-	changes, err := archive.ChangesDirs(layerFs, parentFs)
+	changes, diffSize, err := archive.ChangesDirs(layerFs, parentFs)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	archive, err := archive.ExportChanges(layerFs, changes, gdw.uidMaps, gdw.gidMaps)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	return ioutils.NewReadCloserWrapper(archive, func() error {
@@ -96,7 +96,7 @@ func (gdw *NaiveDiffDriver) Diff(id, parent string) (arch archive.Archive, err e
 		// correct result.
 		time.Sleep(startTime.Truncate(time.Second).Add(time.Second).Sub(time.Now()))
 		return err
-	}), nil
+	}), diffSize, nil
 }
 
 // Changes produces a list of changes between the specified layer
@@ -120,7 +120,12 @@ func (gdw *NaiveDiffDriver) Changes(id, parent string) ([]archive.Change, error)
 		defer driver.Put(parent)
 	}
 
-	return archive.ChangesDirs(layerFs, parentFs)
+	changes, _, err := archive.ChangesDirs(layerFs, parentFs)
+	if err != nil {
+		return nil, err
+	}
+
+	return changes, nil
 }
 
 // ApplyDiff extracts the changeset from the given diff into the

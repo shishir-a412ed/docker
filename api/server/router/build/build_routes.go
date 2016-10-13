@@ -53,6 +53,7 @@ func newImageBuildOptions(ctx context.Context, r *http.Request) (*types.ImageBui
 	options.CgroupParent = r.FormValue("cgroupparent")
 	options.Tags = r.Form["t"]
 	options.SecurityOpt = r.Form["securityopt"]
+	options.StorageOpt = r.Form["storageOpt"]
 
 	if r.Form.Get("shmsize") != "" {
 		shmSize, err := strconv.ParseInt(r.Form.Get("shmsize"), 10, 64)

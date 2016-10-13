@@ -58,16 +58,18 @@ type buildOptions struct {
 	cacheFrom      []string
 	compress       bool
 	securityOpt    []string
+	storageOpt     opts.ListOpts
 }
 
 // NewBuildCommand creates a new `docker build` command
 func NewBuildCommand(dockerCli *command.DockerCli) *cobra.Command {
 	ulimits := make(map[string]*units.Ulimit)
 	options := buildOptions{
-		tags:      opts.NewListOpts(validateTag),
-		buildArgs: opts.NewListOpts(runconfigopts.ValidateArg),
-		ulimits:   runconfigopts.NewUlimitOpt(&ulimits),
-		labels:    opts.NewListOpts(runconfigopts.ValidateEnv),
+		tags:       opts.NewListOpts(validateTag),
+		buildArgs:  opts.NewListOpts(runconfigopts.ValidateArg),
+		ulimits:    runconfigopts.NewUlimitOpt(&ulimits),
+		labels:     opts.NewListOpts(runconfigopts.ValidateEnv),
+		storageOpt: opts.NewListOpts(nil),
 	}
 
 	cmd := &cobra.Command{
@@ -83,6 +85,7 @@ func NewBuildCommand(dockerCli *command.DockerCli) *cobra.Command {
 	flags := cmd.Flags()
 
 	flags.VarP(&options.tags, "tag", "t", "Name and optionally a tag in the 'name:tag' format")
+	flags.Var(&options.storageOpt, "storage-opt", "Set storage driver options per container")
 	flags.Var(&options.buildArgs, "build-arg", "Set build-time variables")
 	flags.Var(options.ulimits, "ulimit", "Ulimit options")
 	flags.StringVarP(&options.dockerfileName, "file", "f", "", "Name of the Dockerfile (Default is 'PATH/Dockerfile')")
@@ -302,6 +305,7 @@ func runBuild(dockerCli *command.DockerCli, options buildOptions) error {
 		Labels:         runconfigopts.ConvertKVStringsToMap(options.labels.GetAll()),
 		CacheFrom:      options.cacheFrom,
 		SecurityOpt:    options.securityOpt,
+		StorageOpt:     options.storageOpt.GetAll(),
 	}
 
 	response, err := dockerCli.Client().ImageBuild(ctx, body, buildOptions)
