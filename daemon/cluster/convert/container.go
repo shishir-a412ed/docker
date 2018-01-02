@@ -222,6 +222,7 @@ func containerToGRPC(c *types.ContainerSpec) (*swarmapi.ContainerSpec, error) {
 		Command:    c.Command,
 		Args:       c.Args,
 		Hostname:   c.Hostname,
+		Runtime:    c.Runtime,
 		Env:        c.Env,
 		Dir:        c.Dir,
 		User:       c.User,

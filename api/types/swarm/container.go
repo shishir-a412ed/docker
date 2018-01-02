@@ -53,6 +53,7 @@ type ContainerSpec struct {
 	Env             []string                `json:",omitempty"`
 	Dir             string                  `json:",omitempty"`
 	User            string                  `json:",omitempty"`
+	Runtime         string                  `json:",omitempty"`
 	Groups          []string                `json:",omitempty"`
 	Privileges      *Privileges             `json:",omitempty"`
 	StopSignal      string                  `json:",omitempty"`
